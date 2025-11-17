@@ -1,0 +1,33 @@
+# FileScanner服务安装和卸载步骤
+
+# 1. 以管理员身份打开命令提示符 
+# 2. 进入程序目录 
+cd C:\Users\admin\Desktop\FilesCanner
+
+# 3. 安装服务 
+FilesCanner.exe install 
+
+# 4. 配置延迟启动 
+sc config FileScannerService start= delayed-auto 
+
+# 5. 配置重试策略 
+sc failure FileScannerService reset= 86400 actions= restart/60000/restart/60000/restart/60000 
+
+# 6. 启动服务 
+net start FileScannerService 
+
+# 7. 验证服务状态 
+sc query FileScannerService 
+
+# 8.停止卸载服务（修改配置文件后先停止再重启） 
+net stop FileScannerService 
+sc delete FileScannerService
+
+# 注意事项：
+# 1. 确保config.txt配置文件与FilesCanner.exe在同一目录下
+# 2. 配置文件中的source参数设置为"."表示扫描配置文件所在目录
+# 3. 修改配置文件后需要重启服务才能生效
+# 4. 服务日志会记录在Windows事件查看器中
+# 5. 上传记录会保存在配置文件所在目录的uploaded.json文件中
+# 6. stable_checks和stable_interval参数用于控制文件写入完成等待功能
+# 7. 程序现在支持自动重连功能，当网络断开再恢复后会自动重建SFTP连接

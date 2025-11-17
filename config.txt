@@ -1,0 +1,35 @@
+# 文件扫描器配置文件
+# 格式: key=value
+
+# 本地监控目录
+source=D:\
+# 远程服务器目录
+target=/SASdata/personal/test/
+
+# SSH服务器地址 (格式: IP:端口)
+host=192.168.8.34:22
+# SSH用户名
+user=zhoukegang
+# SSH密码
+password=123456
+
+# 扫描间隔(分钟)
+interval=10
+# 目标文件夹名称，多个用逗号分隔
+target_folder=reCall
+# 目标文件后缀名，多个用逗号分隔（设置为*表示所有文件）
+target_file=2.csv
+
+# 上传记录文件名
+record_file=uploaded.json
+# 文件稳定性检查参数
+# stable_checks: 连续检查到相同大小的次数
+stable_checks=3
+# stable_interval: 检查间隔(秒)
+stable_interval=1
+# 是否禁用日志输出 (true/false)
+disable_log=false
+# 最大重试次数
+max_retry_count=2
+# 首次运行是否上传已存在的文件 (true/false)
+upload_existing_files=false

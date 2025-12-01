@@ -21,31 +21,31 @@ import (
 type FileScanner struct {
 	sftpClient          *sftp.Client
 	sshClient           *ssh.Client
-	rootPath            string        // 要扫描的根目录
-	targetPath          string        // 远程服务器目标路径
-	scanInterval        time.Duration // 扫描间隔
-	recordFile          string        // 记录已上传文件的JSON文件路径
-	dirRecordFile       string        // 记录目录扫描信息的JSON文件路径
-	targetFolder        string        // 目标文件夹名称，如reCall（保持向后兼容性）
-	targetFolders       []string      // 目标文件夹名称列表
-	targetFiles         []string      // 目标文件名列表
-	stableChecks        int           // 连续多少次检查到大小不变
-	stableInterval      time.Duration // 两次检查间隔
-	uploadedFiles       map[string]time.Time // 记录已上传文件及其修改时间
+	rootPath            string                   // 要扫描的根目录
+	targetPath          string                   // 远程服务器目标路径
+	scanInterval        time.Duration            // 扫描间隔
+	recordFile          string                   // 记录已上传文件的JSON文件路径
+	dirRecordFile       string                   // 记录目录扫描信息的JSON文件路径
+	targetFolder        string                   // 目标文件夹名称，如reCall（保持向后兼容性）
+	targetFolders       []string                 // 目标文件夹名称列表
+	targetFiles         []string                 // 目标文件名列表
+	stableChecks        int                      // 连续多少次检查到大小不变
+	stableInterval      time.Duration            // 两次检查间隔
+	uploadedFiles       map[string]time.Time     // 记录已上传文件及其修改时间
 	dirScanRecords      map[string]DirScanRecord // 记录目录扫描信息
-	activeUploads       map[string]bool // 记录正在上传的文件
-	wg                  sync.WaitGroup // 用于等待扫描goroutine完成
-	closed              bool           // 标记stopChan是否已关闭
-	mu                  sync.Mutex     // 保护closed标志
-	stopChan            chan struct{} // 用于停止扫描的通道
-	failedFiles         map[string]int // 记录上传失败文件及其重试次数
-	failedLogFile       string        // 记录上传失败文件的日志文件路径
-	maxRetryCount       int           // 最大重试次数
-	sshHost             string        // SSH主机地址
-	sshPort             int           // SSH端口
-	sshUser             string        // SSH用户名
-	sshPassword         string        // SSH密码
-	uploadExistingFiles bool          // 是否上传已存在的文件
+	activeUploads       map[string]bool          // 记录正在上传的文件
+	wg                  sync.WaitGroup           // 用于等待扫描goroutine完成
+	closed              bool                     // 标记stopChan是否已关闭
+	mu                  sync.Mutex               // 保护closed标志
+	stopChan            chan struct{}            // 用于停止扫描的通道
+	failedFiles         map[string]int           // 记录上传失败文件及其重试次数
+	failedLogFile       string                   // 记录上传失败文件的日志文件路径
+	maxRetryCount       int                      // 最大重试次数
+	sshHost             string                   // SSH主机地址
+	sshPort             int                      // SSH端口
+	sshUser             string                   // SSH用户名
+	sshPassword         string                   // SSH密码
+	uploadExistingFiles bool                     // 是否上传已存在的文件
 }
 
 type UploadRecord struct {
@@ -60,23 +60,23 @@ type DirScanRecord struct {
 
 // Config 结构体用于存储配置文件中的参数
 type Config struct {
-	Source           string
-	Target           string
-	Host             string
-	User             string
-	Password         string
-	Interval         int
-	TargetFolder     string // 保持向后兼容性
-	TargetFile       string // 保持向后兼容性
-	TargetFolders    []string
-	TargetFiles      []string
-	RecordFile       string
-	StableChecks     int
-	StableInterval   int
-	DisableLog       bool   // 是否禁用日志输出
-	MaxRetryCount    int    // 最大重试次数
-	FailedLogFile    string // 失败文件记录日志路径
-	UploadExistingFiles bool // 是否上传已存在的文件
+	Source              string
+	Target              string
+	Host                string
+	User                string
+	Password            string
+	Interval            int
+	TargetFolder        string // 保持向后兼容性
+	TargetFile          string // 保持向后兼容性
+	TargetFolders       []string
+	TargetFiles         []string
+	RecordFile          string
+	StableChecks        int
+	StableInterval      int
+	DisableLog          bool   // 是否禁用日志输出
+	MaxRetryCount       int    // 最大重试次数
+	FailedLogFile       string // 失败文件记录日志路径
+	UploadExistingFiles bool   // 是否上传已存在的文件
 }
 
 // loadConfig 从配置文件中加载配置
@@ -234,7 +234,7 @@ func NewFileScanner(configPath string) (*FileScanner, error) {
 		return nil, fmt.Errorf("获取程序路径失败: %v", err)
 	}
 	exeDir := filepath.Dir(exePath)
-	
+
 	// 加载配置文件
 	config, err := loadConfig(configPath)
 	if err != nil {
@@ -307,7 +307,7 @@ func NewFileScanner(configPath string) (*FileScanner, error) {
 		recordFile:          config.RecordFile,
 		dirRecordFile:       strings.TrimSuffix(config.RecordFile, filepath.Ext(config.RecordFile)) + "_dirs.json",
 		targetFolder:        config.TargetFolder,
-	targetFolders:       config.TargetFolders,
+		targetFolders:       config.TargetFolders,
 		targetFiles:         config.TargetFiles,
 		stableChecks:        config.StableChecks,
 		stableInterval:      time.Duration(config.StableInterval) * time.Second,
@@ -346,7 +346,7 @@ func parseSSHHost(host string) (string, int, error) {
 // 当 uploadExistingFiles 设置为 false 时，在首次运行时调用此函数
 func (fs *FileScanner) markExistingFilesAsUploaded() error {
 	log.Printf("开始标记已存在的文件为已上传...\n")
-	
+
 	// 遍历根目录
 	err := filepath.Walk(fs.rootPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -370,16 +370,16 @@ func (fs *FileScanner) markExistingFilesAsUploaded() error {
 
 		return nil
 	})
-	
+
 	if err != nil {
 		return fmt.Errorf("遍历目录失败: %v", err)
 	}
-	
+
 	// 保存上传记录
 	if err := fs.saveUploadedRecords(); err != nil {
 		return fmt.Errorf("保存上传记录失败: %v", err)
 	}
-	
+
 	log.Printf("已标记 %d 个文件为已上传\n", len(fs.uploadedFiles))
 	return nil
 }
@@ -391,7 +391,7 @@ func (fs *FileScanner) markTargetDirFilesAsUploaded(targetDirPath string) error 
 	if err != nil {
 		return fmt.Errorf("读取目录失败: %v", err)
 	}
-	
+
 	// 对每个目标文件模式进行处理
 	for _, targetFile := range fs.targetFiles {
 		// 如果target_file设置为*，则匹配所有文件
@@ -433,7 +433,7 @@ func (fs *FileScanner) markTargetDirFilesAsUploaded(targetDirPath string) error 
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -483,26 +483,24 @@ func (fs *FileScanner) Start() error {
 				log.Printf("扫描上传完成\n")
 			}
 		}
-		
+
 		// 首次运行：立即执行一次扫描
 		doScan()
-		
+
 		// 后续运行：扫描完成后等待间隔时间，再执行下一次扫描
 		for {
 			select {
 			case <-fs.stopChan:
 				return
 			default:
-				// 等待扫描间隔时间
-				time.Sleep(fs.scanInterval)
-				
-				// 检查是否应该停止
+				// 等待扫描间隔时间或停止信号
 				select {
 				case <-fs.stopChan:
 					return
-				default:
+				case <-time.After(fs.scanInterval):
+					// 间隔时间结束，继续执行扫描
 				}
-				
+
 				// 执行扫描
 				doScan()
 			}
@@ -520,7 +518,7 @@ func (fs *FileScanner) Stop() {
 		fs.closed = true
 	}
 	fs.mu.Unlock()
-	
+
 	// 等待扫描goroutine完成
 	fs.wg.Wait()
 }
@@ -549,8 +547,6 @@ func (fs *FileScanner) Close() error {
 	return nil
 }
 
-
-
 func (fs *FileScanner) scanAndUpload() error {
 	return filepath.Walk(fs.rootPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -571,11 +567,11 @@ func (fs *FileScanner) scanAndUpload() error {
 							log.Printf("处理%s目录 %s 失败: %v\n", folder, path, err)
 						}
 						// 更新目录扫描记录
-				fs.updateDirScanRecord(path, info.ModTime())
-				// 每次扫描完成后都保存目录扫描记录
-				if err := fs.saveDirScanRecords(); err != nil {
-					log.Printf("保存目录扫描记录失败: %v\n", err)
-				}
+						fs.updateDirScanRecord(path, info.ModTime())
+						// 每次扫描完成后都保存目录扫描记录
+						if err := fs.saveDirScanRecords(); err != nil {
+							log.Printf("保存目录扫描记录失败: %v\n", err)
+						}
 						return filepath.SkipDir // 跳过此目录的子目录
 					}
 				}
@@ -591,8 +587,6 @@ func (fs *FileScanner) scanAndUpload() error {
 	})
 }
 
-
-
 // needsUpload 检查文件是否需要上传（未上传或已修改）
 func (fs *FileScanner) needsUpload(filePath string, fileInfo os.FileInfo) bool {
 	// 检查是否已上传且未修改
@@ -607,7 +601,7 @@ func (fs *FileScanner) needsUpload(filePath string, fileInfo os.FileInfo) bool {
 		if retryCount, exists := fs.failedFiles[filePath]; exists && retryCount >= fs.maxRetryCount {
 			return false // 文件未上传但已达到最大重试次数，不需要上传
 		}
-		
+
 		return true // 文件未上传，需要上传
 	}
 }
@@ -615,7 +609,7 @@ func (fs *FileScanner) needsUpload(filePath string, fileInfo os.FileInfo) bool {
 // processTargetDir 处理目标目录中的文件（优化版，批量检查文件稳定性）
 func (fs *FileScanner) processTargetDir(targetDirPath string) error {
 	log.Printf("开始处理目标文件夹: %s\n", targetDirPath)
-	
+
 	// 循环扫描，直到没有新文件需要上传
 	for {
 		// 第一阶段：扫描所有需要上传的文件（不检查稳定性）
@@ -623,85 +617,85 @@ func (fs *FileScanner) processTargetDir(targetDirPath string) error {
 		if err := fs.collectFilesForUpload(targetDirPath, filesToCheck); err != nil {
 			return err
 		}
-		
+
 		// 如果没有文件需要上传，退出循环
 		if len(filesToCheck) == 0 {
 			log.Printf("目标文件夹 %s 中没有需要上传的文件，扫描完成\n", targetDirPath)
 			break
 		}
-		
+
 		log.Printf("目标文件夹 %s 中发现 %d 个文件需要检查稳定性\n", targetDirPath, len(filesToCheck))
-		
+
 		// 第二阶段：批量检查文件稳定性
 		stableFiles := make(map[string]string)
 		unstableFiles := make(map[string]string)
-		
+
 		if err := fs.batchCheckStability(filesToCheck, stableFiles, unstableFiles); err != nil {
 			return err
 		}
-		
+
 		log.Printf("稳定性检查完成: %d 个文件稳定，%d 个文件不稳定\n", len(stableFiles), len(unstableFiles))
-		
+
 		// 第三阶段：上传已稳定的文件
 		if len(stableFiles) > 0 {
 			log.Printf("开始上传 %d 个已稳定文件\n", len(stableFiles))
 			successCount := 0
 			failCount := 0
-			
+
 			// 遍历所有待上传文件
 			for filePath := range stableFiles {
 				// 检查文件是否已经在上传中
 				if _, isUploading := fs.activeUploads[filePath]; isUploading {
 					continue
 				}
-				
+
 				// 标记文件为上传中
 				fs.activeUploads[filePath] = true
-				
+
 				// 处理文件
 				if err := fs.processFile(filePath); err != nil {
 					failCount++
 				} else {
 					successCount++
 				}
-				
+
 				// 从上传中列表移除
 				delete(fs.activeUploads, filePath)
 			}
-			
+
 			log.Printf("上传完成: 成功 %d 个文件，失败 %d 个文件\n", successCount, failCount)
-			
+
 			// 如果有文件上传失败，返回错误
 			if failCount > 0 {
 				return fmt.Errorf("有 %d 个文件上传失败", failCount)
 			}
 		}
-		
+
 		// 如果没有不稳定的文件，结束处理
 		if len(unstableFiles) == 0 {
 			log.Printf("目标文件夹 %s 所有文件已稳定并上传完成\n", targetDirPath)
-			
+
 			// 第五阶段：再次检查文件夹，确保没有新添加的文件
 			log.Printf("再次检查文件夹 %s，确保没有新添加的文件\n", targetDirPath)
 			newFilesToCheck := make(map[string]string)
 			if err := fs.collectFilesForUpload(targetDirPath, newFilesToCheck); err != nil {
 				return err
 			}
-			
+
 			// 如果有新文件需要上传，继续处理
 			if len(newFilesToCheck) > 0 {
 				log.Printf("发现 %d 个新文件需要上传，继续处理\n", len(newFilesToCheck))
 				continue // 继续下一轮循环，处理新文件
 			}
-			
+
 			break // 没有新文件，结束处理
 		}
-		
+
 		// 第四阶段：等待一段时间，让未稳定文件完成写入
 		log.Printf("等待 %d 个未稳定文件完成写入...\n", len(unstableFiles))
 		time.Sleep(5 * time.Second)
 	}
-	
+
 	log.Printf("目标文件夹 %s 处理完成\n", targetDirPath)
 	return nil
 }
@@ -713,12 +707,12 @@ func (fs *FileScanner) collectFilesForUpload(targetDirPath string, filesToCheck 
 	if err != nil {
 		return fmt.Errorf("读取目录失败: %v", err)
 	}
-	
+
 	// 对每个目标文件模式进行处理
 	for _, targetFile := range fs.targetFiles {
 		// 第一阶段：寻找匹配的文件
 		matchedFiles := make([]string, 0)
-		
+
 		// 如果target_file设置为*，则匹配所有文件
 		if targetFile == "*" {
 			for _, file := range files {
@@ -743,7 +737,7 @@ func (fs *FileScanner) collectFilesForUpload(targetDirPath string, filesToCheck 
 				}
 			}
 		}
-		
+
 		// 第二阶段：检查匹配的文件是否需要上传
 		for _, filePath := range matchedFiles {
 			// 获取文件信息
@@ -751,14 +745,14 @@ func (fs *FileScanner) collectFilesForUpload(targetDirPath string, filesToCheck 
 			if err != nil {
 				continue
 			}
-			
+
 			// 检查文件是否需要上传（未上传或已修改）
 			if fs.needsUpload(filePath, fileInfo) {
 				filesToCheck[filePath] = targetDirPath
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -766,26 +760,26 @@ func (fs *FileScanner) collectFilesForUpload(targetDirPath string, filesToCheck 
 func (fs *FileScanner) batchCheckStability(filesToCheck map[string]string, stableFiles map[string]string, unstableFiles map[string]string) error {
 	// 记录每个文件的大小变化
 	fileSizes := make(map[string][]int64)
-	
+
 	// 使用配置的检查次数和间隔时间，记录文件大小
 	for i := 0; i < fs.stableChecks; i++ {
 		if i > 0 {
 			time.Sleep(fs.stableInterval)
 		}
-		
+
 		for filePath := range filesToCheck {
 			size, err := fs.fileSize(filePath)
 			if err != nil {
 				continue
 			}
-			
+
 			if fileSizes[filePath] == nil {
 				fileSizes[filePath] = make([]int64, 0, fs.stableChecks)
 			}
 			fileSizes[filePath] = append(fileSizes[filePath], size)
 		}
 	}
-	
+
 	// 分析文件大小变化，判断文件是否稳定
 	for filePath, sizes := range fileSizes {
 		if len(sizes) < fs.stableChecks {
@@ -793,7 +787,7 @@ func (fs *FileScanner) batchCheckStability(filesToCheck map[string]string, stabl
 			unstableFiles[filePath] = filesToCheck[filePath]
 			continue
 		}
-		
+
 		// 检查所有记录的大小是否相同
 		isStable := true
 		for i := 1; i < len(sizes); i++ {
@@ -802,18 +796,16 @@ func (fs *FileScanner) batchCheckStability(filesToCheck map[string]string, stabl
 				break
 			}
 		}
-		
+
 		if isStable {
 			stableFiles[filePath] = filesToCheck[filePath]
 		} else {
 			unstableFiles[filePath] = filesToCheck[filePath]
 		}
 	}
-	
+
 	return nil
 }
-
-
 
 // processFile 处理单个文件的上传（优化版，无需再检查文件稳定性）
 func (fs *FileScanner) processFile(filePath string) error {
@@ -974,7 +966,7 @@ func (fs *FileScanner) uploadFile(filePath string) error {
 
 	// 复制文件内容
 	buf := make([]byte, 1024*1024) // 1MB buffer
-	defer tempFile.Close() // 确保文件最终会被关闭
+	defer tempFile.Close()         // 确保文件最终会被关闭
 	for {
 		n, err := sourceFile.Read(buf)
 		if n > 0 {
@@ -1049,7 +1041,7 @@ func (fs *FileScanner) saveUploadedRecords() error {
 	if err := os.WriteFile(tmpFile, data, 0644); err != nil {
 		return fmt.Errorf("写入临时记录文件失败: %v", err)
 	}
-	
+
 	// 原子重命名，确保要么保留老文件，要么整体替换为新文件
 	if err := os.Rename(tmpFile, fs.recordFile); err != nil {
 		return fmt.Errorf("重命名临时记录文件失败: %v", err)
@@ -1104,18 +1096,18 @@ func (fs *FileScanner) hasSubdirUpdated(dirPath string, lastModTime time.Time) b
 	for _, entry := range entries {
 		if entry.IsDir() {
 			subDirPath := filepath.Join(dirPath, entry.Name())
-			
+
 			// 获取子目录信息
 			info, err := entry.Info()
 			if err != nil {
 				continue // 获取失败，跳过
 			}
-			
+
 			// 如果子目录修改时间晚于上次检查时间，需要扫描
 			if info.ModTime().After(lastModTime) {
 				return true
 			}
-			
+
 			// 递归检查子目录的子目录
 			// 必须递归检查，因为深层文件修改不会更新父目录的mtime
 			if fs.hasSubdirUpdated(subDirPath, lastModTime) {
@@ -1178,7 +1170,7 @@ func (fs *FileScanner) saveDirScanRecords() error {
 	if err := os.WriteFile(tmpFile, data, 0644); err != nil {
 		return fmt.Errorf("写入临时目录记录文件失败: %v", err)
 	}
-	
+
 	// 原子重命名，确保要么保留老文件，要么整体替换为新文件
 	return os.Rename(tmpFile, fs.dirRecordFile)
 }
@@ -1212,7 +1204,7 @@ func (fs *FileScanner) loadFailedRecords() error {
 		if len(parts) >= 3 {
 			// 第一个部分是日期，第二个部分是时间，第三个部分是文件路径
 			filePath := parts[2]
-			
+
 			// 将文件路径添加到失败记录中，标记为已达到最大尝试次数
 			fs.failedFiles[filePath] = fs.maxRetryCount
 		}
@@ -1239,7 +1231,7 @@ func (fs *FileScanner) logFailedFile(filePath string, attemptCount int) error {
 	if _, err := file.WriteString(record); err != nil {
 		return fmt.Errorf("写入失败记录失败: %v", err)
 	}
-	
+
 	// 确保数据写入磁盘
 	if err := file.Sync(); err != nil {
 		return fmt.Errorf("同步失败记录文件到磁盘失败: %v", err)
@@ -1247,10 +1239,6 @@ func (fs *FileScanner) logFailedFile(filePath string, attemptCount int) error {
 
 	return nil
 }
-
-
-
-
 
 // fileSize 获取文件大小
 func (fs *FileScanner) fileSize(filePath string) (int64, error) {
@@ -1290,7 +1278,7 @@ func (p *program) run() {
 		return
 	}
 	exeDir := filepath.Dir(exePath)
-	
+
 	// 获取配置文件路径
 	configPath := filepath.Join(exeDir, "config.txt")
 	if len(os.Args) > 1 && os.Args[1] != "install" && os.Args[1] != "uninstall" {
